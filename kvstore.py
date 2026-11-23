@@ -1,3 +1,5 @@
+"""Persistent key-value store using an append-only log."""
+
 import json
 import math
 import os
@@ -7,7 +9,7 @@ import time
 class KVStore:
     """Simple key-value database with append-only file storage."""
     
-    def __init__(self, filename="data.db"):
+    def __init__(self, filename: str = "data.db") -> None:
         self.data = []
         self.filename = filename
 
@@ -17,7 +19,7 @@ class KVStore:
 
         self.load_data()
 
-    def find_key(self, key):
+    def find_key(self, key: str) -> int:
         """Find the position of a key in the list."""
         for i in range(len(self.data)):
             if self.data[i][0] == key:
@@ -50,7 +52,7 @@ class KVStore:
 
         return copied
 
-    def write_log(self, record):
+    def write_log(self, record: list) -> None:
         """Save one database operation to the log file."""
         if self.in_transaction:
             self.transaction_log.append(record)
@@ -61,7 +63,8 @@ class KVStore:
             file.flush()
             os.fsync(file.fileno())
 
-    def write_many(self, records):
+    def write_many(self, records: list) -> None:
+        """Save multiple database operations to the log file."""
         if len(records) == 0:
             return
 
@@ -71,7 +74,7 @@ class KVStore:
             file.flush()
             os.fsync(file.fileno())
 
-    def remove_expired(self, key):
+    def remove_expired(self, key: str) -> None:
         index = self.find_key(key)
 
         if index == -1:
@@ -82,7 +85,7 @@ class KVStore:
         if expires_at is not None and expires_at <= time.time():
             self.data.pop(index)
 
-    def set_value(self, key, value):
+    def set_value(self, key: str, value: str) -> None:
         index = self.find_key(key)
         new_item = [key, "string", value, None]
 
@@ -91,14 +94,14 @@ class KVStore:
         else:
             self.data[index] = new_item
 
-    def set(self, key, value, save=True):
+    def set(self, key: str, value: str, save: bool = True) -> None:
         """Store or replace a key and value."""
         self.set_value(key, value)
 
         if save:
             self.write_log(["SET", key, value])
 
-    def get(self, key):
+    def get(self, key: str) -> str | None:
         """Return the value for a key if it exists."""
         self.remove_expired(key)
 
@@ -112,7 +115,7 @@ class KVStore:
 
         return self.data[index][2]
 
-    def delete_value(self, key):
+    def delete_value(self, key: str) -> int:
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -124,7 +127,7 @@ class KVStore:
 
         return 1
 
-    def delete(self, key, save=True):
+    def delete(self, key: str, save: bool = True) -> int:
         """Delete a key from the database."""
         result = self.delete_value(key)
 
@@ -133,7 +136,7 @@ class KVStore:
 
         return result
 
-    def exists(self, key):
+    def exists(self, key: str) -> int:
         self.remove_expired(key)
 
         if self.find_key(key) == -1:
@@ -141,7 +144,7 @@ class KVStore:
 
         return 1
 
-    def mset(self, items, save=True):
+    def mset(self, items: list[str], save: bool = True) -> bool:
         if len(items) == 0 or len(items) % 2 != 0:
             return False
 
@@ -156,7 +159,7 @@ class KVStore:
 
         return True
 
-    def mget(self, keys):
+    def mget(self, keys: list[str]) -> list:
         values = []
 
         for key in keys:
@@ -164,7 +167,7 @@ class KVStore:
 
         return values
 
-    def expire_value(self, key, expires_at):
+    def expire_value(self, key: str, expires_at: float) -> int:
         index = self.find_key(key)
 
         if index == -1:
@@ -174,7 +177,7 @@ class KVStore:
 
         return 1
 
-    def expire(self, key, seconds):
+    def expire(self, key: str, seconds: str) -> int:
         """Give a key an expiration time."""
         try:
             seconds = int(seconds)
@@ -193,7 +196,7 @@ class KVStore:
 
         return 1
 
-    def ttl(self, key):
+    def ttl(self, key: str) -> int:
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -214,7 +217,7 @@ class KVStore:
 
         return math.ceil(remaining)
 
-    def range_keys(self, start, end):
+    def range_keys(self, start: str, end: str) -> list[str]:
         """Return keys inside a lexicographical range."""
         keys = []
 
@@ -239,7 +242,7 @@ class KVStore:
 
         return keys
 
-    def begin(self):
+    def begin(self) -> bool:
         """Start a transaction."""
         if self.in_transaction:
             return False
@@ -250,7 +253,7 @@ class KVStore:
 
         return True
 
-    def commit(self):
+    def commit(self) -> bool:
         """Save all operations in the current transaction."""
         if not self.in_transaction:
             return False
@@ -265,7 +268,7 @@ class KVStore:
 
         return True
 
-    def abort(self):
+    def abort(self) -> bool:
         """Cancel the current transaction."""
         if not self.in_transaction:
             return False
@@ -277,14 +280,14 @@ class KVStore:
 
         return True
 
-    def find_hash_field(self, fields, field):
+    def find_hash_field(self, fields: list, field: str) -> int:
         for i in range(len(fields)):
             if fields[i][0] == field:
                 return i
 
         return -1
 
-    def hset_value(self, hash_name, field, value):
+    def hset_value(self, hash_name: str, field: str, value: str) -> int:
         self.remove_expired(hash_name)
 
         index = self.find_key(hash_name)
@@ -308,7 +311,13 @@ class KVStore:
 
         return 0
 
-    def hset(self, hash_name, field, value, save=True):
+    def hset(
+        self,
+        hash_name: str,
+        field: str,
+        value: str,
+        save: bool = True
+) -> int:
         result = self.hset_value(hash_name, field, value)
 
         if result != -1 and save:
@@ -316,7 +325,7 @@ class KVStore:
 
         return result
 
-    def hget(self, hash_name, field):
+    def hget(self, hash_name: str, field: str) -> str | None:
         self.remove_expired(hash_name)
 
         index = self.find_key(hash_name)
@@ -336,7 +345,7 @@ class KVStore:
 
         return fields[field_index][1]
 
-    def hgetall(self, hash_name):
+    def hgetall(self, hash_name: str) -> list:
         self.remove_expired(hash_name)
 
         index = self.find_key(hash_name)
@@ -349,7 +358,7 @@ class KVStore:
 
         return self.data[index][2]
 
-    def get_or_make_list(self, key):
+    def get_or_make_list(self, key: str) -> list | None:
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -363,7 +372,7 @@ class KVStore:
 
         return self.data[index][2]
 
-    def lpush_value(self, key, value):
+    def lpush_value(self, key: str, value: str) -> int:
         values = self.get_or_make_list(key)
 
         if values is None:
@@ -373,7 +382,7 @@ class KVStore:
 
         return len(values)
 
-    def lpush(self, key, value, save=True):
+    def lpush(self, key: str, value: str, save: bool = True) -> int:
         length = self.lpush_value(key, value)
 
         if length != -1 and save:
@@ -381,7 +390,7 @@ class KVStore:
 
         return length
 
-    def rpush_value(self, key, value):
+    def rpush_value(self, key: str, value: str) -> int:
         values = self.get_or_make_list(key)
 
         if values is None:
@@ -391,7 +400,7 @@ class KVStore:
 
         return len(values)
 
-    def rpush(self, key, value, save=True):
+    def rpush(self, key: str, value: str, save: bool = True) -> int:
         length = self.rpush_value(key, value)
 
         if length != -1 and save:
@@ -399,7 +408,7 @@ class KVStore:
 
         return length
 
-    def lrange(self, key, start, stop):
+    def lrange(self, key: str, start: str, stop: str) -> list:
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -435,7 +444,7 @@ class KVStore:
 
         return values[start:stop + 1]
 
-    def lpop_value(self, key):
+    def lpop_value(self, key: str) -> str | None:
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -453,7 +462,7 @@ class KVStore:
 
         return values.pop(0)
 
-    def lpop(self, key, save=True):
+    def lpop(self, key: str, save: bool = True) -> str | None:
         value = self.lpop_value(key)
 
         if value is not None and save:
@@ -461,7 +470,7 @@ class KVStore:
 
         return value
 
-    def change_counter(self, key, amount):
+    def change_counter(self, key: str, amount: int) -> int | None:
         current = self.get(key)
 
         if current is None:
@@ -478,19 +487,19 @@ class KVStore:
 
         return number
 
-    def incr(self, key):
+    def incr(self, key: str) -> int | None:
         return self.change_counter(key, 1)
 
-    def decr(self, key):
+    def decr(self, key: str) -> int | None:
         return self.change_counter(key, -1)
 
-    def flushdb(self, save=True):
+    def flushdb(self, save: bool = True) -> None:
         self.data = []
 
         if save:
             self.write_log(["FLUSHDB"])
 
-    def replay(self, record):
+    def replay(self, record: list) -> None:
         """Replay one saved operation when the database starts."""
         if len(record) == 0:
             return
@@ -537,7 +546,7 @@ class KVStore:
         elif command == "FLUSHDB":
             self.flushdb(save=False)
 
-    def load_data(self):
+    def load_data(self) -> None:
         """Rebuild the in-memory data from data.db."""
         if not os.path.exists(self.filename):
             return

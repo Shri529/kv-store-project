@@ -1,9 +1,11 @@
+"""Command-line interface for the key-value store."""
+
 import shlex
 
 from kvstore import KVStore
 
 
-def main():
+def main() -> None:
     db = KVStore()
 
     while True:
