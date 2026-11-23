@@ -62,8 +62,7 @@ class KVStore:
             return
 
         with open(self.filename, "a", encoding="utf-8") as file:
-            for record in records:
-                file.write(json.dumps(record) + "\n")
+            file.writelines(json.dumps(record) + "\n" for record in records)
 
             file.flush()
             os.fsync(file.fileno())
@@ -414,8 +413,7 @@ class KVStore:
         if stop < 0:
             stop = length + stop
 
-        if start < 0:
-            start = 0
+        start = max(start, 0)
 
         if stop >= length:
             stop = length - 1

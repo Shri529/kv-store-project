@@ -2,7 +2,6 @@ import shlex
 
 from kvstore import KVStore
 
-
 db = KVStore()
 
 

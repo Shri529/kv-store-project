@@ -1,4 +1,7 @@
 __pycache__/
 *.pyc
 data.db
+test_data.db
 .DS_Store
+.venv/
+.ruff_cache/
