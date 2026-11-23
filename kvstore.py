@@ -5,6 +5,8 @@ import time
 
 
 class KVStore:
+    """Simple key-value database with append-only file storage."""
+    
     def __init__(self, filename="data.db"):
         self.data = []
         self.filename = filename
@@ -16,6 +18,7 @@ class KVStore:
         self.load_data()
 
     def find_key(self, key):
+        """Find the position of a key in the list."""
         for i in range(len(self.data)):
             if self.data[i][0] == key:
                 return i
@@ -48,6 +51,7 @@ class KVStore:
         return copied
 
     def write_log(self, record):
+        """Save one database operation to the log file."""
         if self.in_transaction:
             self.transaction_log.append(record)
             return
@@ -88,12 +92,14 @@ class KVStore:
             self.data[index] = new_item
 
     def set(self, key, value, save=True):
+        """Store or replace a key and value."""
         self.set_value(key, value)
 
         if save:
             self.write_log(["SET", key, value])
 
     def get(self, key):
+        """Return the value for a key if it exists."""
         self.remove_expired(key)
 
         index = self.find_key(key)
@@ -119,6 +125,7 @@ class KVStore:
         return 1
 
     def delete(self, key, save=True):
+        """Delete a key from the database."""
         result = self.delete_value(key)
 
         if result == 1 and save:
@@ -168,6 +175,7 @@ class KVStore:
         return 1
 
     def expire(self, key, seconds):
+        """Give a key an expiration time."""
         try:
             seconds = int(seconds)
         except ValueError:
@@ -207,6 +215,7 @@ class KVStore:
         return math.ceil(remaining)
 
     def range_keys(self, start, end):
+        """Return keys inside a lexicographical range."""
         keys = []
 
         current_keys = []
@@ -231,6 +240,7 @@ class KVStore:
         return keys
 
     def begin(self):
+        """Start a transaction."""
         if self.in_transaction:
             return False
 
@@ -241,6 +251,7 @@ class KVStore:
         return True
 
     def commit(self):
+        """Save all operations in the current transaction."""
         if not self.in_transaction:
             return False
 
@@ -255,6 +266,7 @@ class KVStore:
         return True
 
     def abort(self):
+        """Cancel the current transaction."""
         if not self.in_transaction:
             return False
 
@@ -479,6 +491,7 @@ class KVStore:
             self.write_log(["FLUSHDB"])
 
     def replay(self, record):
+        """Replay one saved operation when the database starts."""
         if len(record) == 0:
             return
 
@@ -525,6 +538,7 @@ class KVStore:
             self.flushdb(save=False)
 
     def load_data(self):
+        """Rebuild the in-memory data from data.db."""
         if not os.path.exists(self.filename):
             return
 
