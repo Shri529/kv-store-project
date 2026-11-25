@@ -89,7 +89,7 @@ class TestKVStore(unittest.TestCase):
         self.assertEqual(
             self.db.lrange("list", 0, -1),
             ["one", "two"]
-        )
+    )
 
 
 if __name__ == "__main__":
